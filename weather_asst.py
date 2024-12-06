@@ -22,53 +22,73 @@ load_dotenv()
 # We define a class named AgentState that tracks the conversation's current status.
 class AgentState(TypedDict):
     messages: Annotated[list, operator.add]
-    location: str
-    weather: str
+    location: str | None
+    weather: str | None
 
-# Create our graph
-workflow = StateGraph(AgentState)
-
-
-# Define our nodes
-def greet(AgentState):
+def greet(state: AgentState) -> dict:
+    print("Executing greet...")  # Debug print
     return {"messages": [("ai", "Hello! I'm your weather assistant. Where are you located?")]}
 
+def get_location(state: AgentState) -> dict:
+    print("Executing get_location...")  # Debug print
+    last_message = state['messages'][-1][1]
+    return {"location": last_message}
 
-def get_location(AgentState):
-    return {"location": AgentState["messages"][-1][1]}
-
-
-def check_weather(AgentState):
-    # In a real app, we'd call a weather API here
-    weather = "sunny" if "new york" in AgentState["location"].lower() else "rainy"
+def check_weather(state: AgentState) -> dict:
+    print("Executing check_weather...")  # Debug print
+    location = state.get("location", "").lower()
+    weather = "sunny" if "new york" in location else "rainy"
     return {"weather": weather}
 
+def report_weather(state: AgentState) -> dict:
+    print("Executing report_weather...")  # Debug print
+    return {
+        "messages": [
+            ("ai", f"The weather in {state['location']} is {state['weather']}. Can I help you with anything else?")
+        ]
+    }
 
-def report_weather(AgentState):
-    return {"messages": [
-        ("ai", f"The weather in {AgentState['location']} is {AgentState['weather']}. Can I help you with anything else?")]}
+# Create and configure workflow
+workflow = StateGraph(AgentState)
 
-
-# Add nodes to our graph
 workflow.add_node("greet", greet)
 workflow.add_node("get_location", get_location)
 workflow.add_node("check_weather", check_weather)
 workflow.add_node("report_weather", report_weather)
 
-# Connect our nodes
 workflow.set_entry_point("greet")
 workflow.add_edge("greet", "get_location")
 workflow.add_edge("get_location", "check_weather")
 workflow.add_edge("check_weather", "report_weather")
 workflow.add_edge("report_weather", END)
 
-
-# Compile our graph
+# Compile the app
 app = workflow.compile()
 
+# Run directly without the function wrapper
+initial_state = {
+    "messages": [("human", "Hi, I'd like to check the weather.")],
+    "location": None,
+    "weather": None
+}
 
-# Run our app
-inputs = {"messages": [("human", "Hi, I'd like to check the weather.")]}
-for output in app.stream(inputs):
-    for key, value in output.items():
-        print(f"{key}: {value}")
+print("Starting the weather assistant...")
+for output in app.stream(initial_state):
+    print(f"Output received: {output}")  # Debug print
+    if "messages" in output and output["messages"]:
+        for sender, message in output["messages"]:
+            print(f"{sender}: {message}")
+
+location = input("You: ")
+
+new_state = {
+    "messages": [("human", location)],
+    "location": None,
+    "weather": None
+}
+
+for output in app.stream(new_state):
+    print(f"Output received: {output}")  # Debug print
+    if "messages" in output and output["messages"]:
+        for sender, message in output["messages"]:
+            print(f"{sender}: {message}")

@@ -2,7 +2,9 @@ from langchain_core.tools import tool
 from typing import TypedDict, Annotated, List, Union
 from langchain_experimental.utilities import PythonREPL
 from langchain_community.tools.tavily_search import TavilySearchResults
-from langchain_openai import OpenAI
+# from langchain_openai import OpenAI
+# from langchain_openai import ChatOpenAI
+from langchain_community.chat_models import ChatOpenAI
 from langchain_core.agents import AgentAction, AgentFinish
 from langchain.agents import create_json_chat_agent
 from langgraph.prebuilt.tool_executor import ToolExecutor
@@ -52,7 +54,7 @@ repl = PythonREPL()
 api_key = os.environ['OA_API']           
 os.environ['OPENAI_API_KEY'] = api_key
 
-chat_model = OpenAI(openai_api_key=api_key)
+chat_model = ChatOpenAI(model='gpt-3.5-turbo', temperature=0, api_key=api_key)
 
 
 # **************************************************************************************************
