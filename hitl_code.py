@@ -25,6 +25,8 @@ from langchain_core.messages import (
 import json
 import os
 import operator
+from dotenv import load_dotenv
+load_dotenv()
 
 # **************************************************************************************************
 # We define a class named AgentState that tracks the conversation's current status. This state
@@ -40,7 +42,7 @@ class AgentState(TypedDict):
    intermediate_steps: Annotated[list[tuple[AgentAction, str]], operator.add]
 
 
-tavily_api_key = os.environ['tavily_key']           
+tavily_api_key = os.environ['TAVILY_KEY']           
 os.environ["TAVILY_API_KEY"] = tavily_api_key
 
 search = TavilySearchResults(max_results=1)
@@ -181,8 +183,8 @@ prompt2 = ChatPromptTemplate(
         HumanMessagePromptTemplate(
             prompt=PromptTemplate(
                 input_variables=["input", "tool_names", "tools"],
-                template='TOOLS\n------\nAssistant can ask the user to use tools to look up information that may be helpful in answering the users original question. 
-The tools the human can use are:\n\n{tools}\n\nRESPONSE FORMAT INSTRUCTIONS\n----------------------------\n\nWhen responding to me, please output a response in one of two formats:\n\n**Option 1:**\nUse this if you want the human to use a tool.\nMarkdown code snippet formatted in the following schema:\n\n```json\n{{\n    "action": string, \\ The action to take. Must be one of {tool_names}\n    "action_input": string \\ The input to the action\n}}\n```\n\n**Option #2:**\nUse this if you can respond directly to the human after tool execution. Markdown code snippet formatted in the following schema:\n\n```json\n{{\n    "action": "Final Answer",\n    "action_input": string \\ You should put what you want to return to use here\n}}\n```\n\nUSER\'S INPUT\n--------------------\nHere is the user\'s input (remember to respond with a markdown code snippet of a json blob with a single action, and NOTHING else):\n\n{input}',
+                template="""TOOLS\n------\nAssistant can ask the user to use tools to look up information that may be helpful in answering the users original question. 
+The tools the human can use are:\n\n{tools}\n\nRESPONSE FORMAT INSTRUCTIONS\n----------------------------\n\nWhen responding to me, please output a response in one of two formats:\n\n**Option 1:**\nUse this if you want the human to use a tool.\nMarkdown code snippet formatted in the following schema:\n\n```json\n{{\n    "action": string, \\ The action to take. Must be one of {tool_names}\n    "action_input": string \\ The input to the action\n}}\n```\n\n**Option #2:**\nUse this if you can respond directly to the human after tool execution. Markdown code snippet formatted in the following schema:\n\n```json\n{{\n    "action": "Final Answer",\n    "action_input": string \\ You should put what you want to return to use here\n}}\n```\n\nUSER\'S INPUT\n--------------------\nHere is the user\'s input (remember to respond with a markdown code snippet of a json blob with a single action, and NOTHING else):\n\n{input}""",
 
             )
         ),
@@ -280,7 +282,10 @@ workflow.add_edge("action", "agent")
 
 app = workflow.compile()
 
-inputs = {"input": "what is the weather in taiwan", "chat_history": []}
+# user_input = "what is the weather in taiwan"
+user_input = "what is the latest on the world cup chess championship"
+
+inputs = {"input": user_input, "chat_history": []}
 result = app.invoke(inputs)
 
 print(result["agent_outcome"].return_values["output"])
