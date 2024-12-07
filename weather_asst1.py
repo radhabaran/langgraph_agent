@@ -1,6 +1,7 @@
 from typing import Annotated, Literal, TypedDict
 from langchain_core.messages import HumanMessage
 from langchain_anthropic import ChatAnthropic
+from langchain_openai import ChatOpenAI
 from langchain_core.tools import tool
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph, MessagesState
@@ -13,8 +14,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-anthro_api_key = os.environ['ANTHRO_KEY']           
-os.environ["ANTHROPIC_API_KEY"] = anthro_api_key
+# anthro_api_key = os.environ['ANTHRO_KEY']           
+# os.environ["ANTHROPIC_API_KEY"] = anthro_api_key
+
+api_key = os.environ['OA_API']           
+os.environ['OPENAI_API_KEY'] = api_key
 
 # We define a class named AgentState that tracks the conversation's current status.
 class AgentState(TypedDict):
@@ -33,7 +37,8 @@ def search(query: str):
 tools = [search]
 tool_node = ToolNode(tools)
 
-model = ChatAnthropic(model="claude-3-5-sonnet-20240620", temperature=0).bind_tools(tools)
+# model = ChatAnthropic(model="claude-3-5-sonnet-20240620", temperature=0).bind_tools(tools)
+model = ChatOpenAI(model="gpt-4o-mini", temperature=0).bind_tools(tools)
 
 
 # Define the function that determines whether to continue or not
