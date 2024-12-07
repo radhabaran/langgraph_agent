@@ -19,7 +19,7 @@ openai
 #tiktoken>=0.5.2
 
 # UI Framework
-#gradio==4.44.1
+gradio==4.44.1
 #setuptools>=65.5.1
 
 # Data Processing & Utils
