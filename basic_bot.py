@@ -6,6 +6,13 @@ from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
 from langchain_openai import ChatOpenAI
 from IPython.display import Image, display
+import os
+
+from dotenv import load_dotenv
+
+
+
+load_dotenv()
 
 
 # ********************************************************************************************************
@@ -33,6 +40,8 @@ graph_builder = StateGraph(State)
 # ********************************************************************************************************
 
 # Next, add a "chatbot" node. Nodes represent units of work. They are typically regular python functions.
+api_key = os.environ['OA_API']           
+os.environ['OPENAI_API_KEY'] = api_key
 
 llm = ChatOpenAI(model='gpt-4o-mini')
 
@@ -62,10 +71,12 @@ graph = graph_builder.compile()
 # like draw_ascii or draw_png
 
 try:
-    display(Image(graph.get_graph().draw_mermaid_png()))
+    png_data = graph.get_graph().draw_mermaid_png()
+    with open("basic_bot_graph.png", "wb") as f:
+        f.write(png_data)
 except Exception:
-    # This requires some extra dependencies and is optional
     pass
+
 
 # Now let's run the chatbot!
 def stream_graph_updates(user_input: str):

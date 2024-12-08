@@ -19,6 +19,7 @@ openai
 #tiktoken>=0.5.2
 
 # UI Framework
+IPython
 gradio==4.44.1
 #setuptools>=65.5.1
 
