@@ -91,25 +91,60 @@ except Exception:
 # Now we can interact with your bot! First, pick a thread to use as the key for this conversation.
 config = {"configurable": {"thread_id": "1"}}
 
-# Now let's run the chatbot!
-# The config is the **second positional argument** to stream() or invoke()!
 def stream_graph_updates(user_input: str):
-    for event in graph.stream({"messages": [("user", user_input)]}, config):
-        for value in event.values():
-            print("Assistant:", value["messages"][-1].content)
+    events = graph.stream(
+        {"messages": [("user", user_input)]}, 
+        config, 
+        stream_mode="values"
+    )
+    for event in events:
+        if "messages" in event:
+            event["messages"][-1].pretty_print()
 
-            
+print("Chat with the AI (type 'quit', 'exit', or 'q' to end)")
+
+
 while True:
     try:
-        user_input = input("User: ")
+        user_input = input("\nUser: ").strip()
         if user_input.lower() in ["quit", "exit", "q"]:
             print("Goodbye!")
             break
+        if not user_input:
+            continue
+            
+        stream_graph_updates(user_input)
 
-        stream_graph_updates(user_input)
-    except:
-        # fallback if input() is not available
-        user_input = "What do you know about LangGraph?"
-        print("User: " + user_input)
-        stream_graph_updates(user_input)
+    
+        # Continue the conversation if there are pending actions
+        events = graph.stream(None, config, stream_mode="values")
+        for event in events:
+            if "messages" in event:
+                event["messages"][-1].pretty_print()
+                
+    except KeyboardInterrupt:
+        print("\nGoodbye!")
         break
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
+
+# user_input = "I'm learning LangGraph. Could you do some research on it for me?"
+# events = graph.stream(
+#     {"messages": [("user", user_input)]}, config, stream_mode="values"
+# )
+
+# for event in events:
+#     if "messages" in event:
+#         event["messages"][-1].pretty_print()
+
+# snapshot = graph.get_state(config)
+# print(snapshot.next)
+
+# existing_message = snapshot.values["messages"][-1]
+# print(existing_message.tool_calls)
+
+# events = graph.stream(None, config, stream_mode="values")
+# for event in events:
+#     if "messages" in event:
+#         event["messages"][-1].pretty_print()
+
