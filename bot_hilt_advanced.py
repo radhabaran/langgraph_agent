@@ -12,6 +12,7 @@
 from typing import Annotated, Literal
 from typing_extensions import TypedDict
 from langgraph.graph import StateGraph, START, END
+from langchain_anthropic import ChatAnthropic
 from langchain_openai import ChatOpenAI
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_core.messages import BaseMessage, ToolMessage, AIMessage
@@ -29,6 +30,9 @@ load_dotenv()
 
 api_key = os.environ['OA_API']           
 os.environ['OPENAI_API_KEY'] = api_key
+
+anthro_api_key = os.environ['ANTHRO_KEY']           
+os.environ['ANTHROPIC_API_KEY'] = anthro_api_key
 
 tavily_api_key = os.environ['TAVILY_KEY']           
 os.environ["TAVILY_API_KEY"] = tavily_api_key
@@ -56,7 +60,9 @@ class State(TypedDict):
 
 memory = MemorySaver()
 
-llm = ChatOpenAI(model='gpt-4o-mini')
+llm = ChatAnthropic(model="claude-3-5-sonnet-20240620")
+# llm = ChatOpenAI(model='gpt-3.5-turbo')
+
 # Modification: tell the LLM which tools it can call
 # We can bind the llm to a tool definition, a pydantic model, or a json schema
 
@@ -190,18 +196,45 @@ while True:
         snapshot = graph.get_state(config)
 
         ai_message = snapshot.values["messages"][-1]
-        human_response = (
-            "We, the experts are here to help! We'd recommend you check out LangGraph to build your agent."
-            " It's much more reliable and extensible than simple autonomous agents."
-        )
-        tool_message = create_response(human_response, ai_message)
-        graph.update_state(config, {"messages": [tool_message]})
+        # human_response = (
+        #     "We, the experts are here to help! We'd recommend you check out LangGraph to build your agent."
+        #     " It's much more reliable and extensible than simple autonomous agents."
+        # )
+
+        # Check if user is satisfied with AI response
+        print("\nAre you satisfied with the response? (yes/no):")
+        satisfaction = input().strip().lower()
+
+        if satisfaction in ['no', 'n']:
+            print("\nConsulting experts...")
+            print("Expert (type your response):")
+            human_response = input().strip()
+
+            # If no response is provided, use a default message
+            if not human_response:
+                human_response = "No response from human expert."
+
+            # tool_message = create_response(human_response, ai_message)
+            # graph.update_state(config, {"messages": [tool_message]})
     
-        # Continue the conversation if there are pending actions
-        events = graph.stream(None, config, stream_mode="values")
-        for event in events:
-            if "messages" in event:
-                event["messages"][-1].pretty_print()
+            # Update state with the expert response
+            graph.update_state(config, {"messages": [("user", f"Expert Response: {human_response}")]})
+
+            # Continue the conversation if there are pending actions
+            # events = graph.stream(None, config, stream_mode="values")
+
+            # Continue conversation with updated state
+            events = graph.stream(
+                {"messages": graph.get_state(config).values["messages"]},
+                    config,
+                    stream_mode="values"
+            )
+
+            for event in events:
+                if "messages" in event:
+                    event["messages"][-1].pretty_print()
+        else:
+            print("Great! Let's continue with your next question.")
                 
     except KeyboardInterrupt:
         print("\nGoodbye!")
